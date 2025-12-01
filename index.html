@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Management System (Local Storage)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom scrollbar for dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937; /* Gray-800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563; /* Gray-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* Gray-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex antialiased">
+
+    <aside class="w-64 bg-gray-800 flex flex-col p-4 shadow-xl border-r border-gray-700">
+        <div class="text-2xl font-bold text-indigo-400 mb-8">
+            Event Manager
+        </div>
+        <nav class="flex-grow">
+            <h3 class="text-xs font-semibold uppercase text-gray-400 mb-2">Select an option</h3>
+            <ul>
+                <li>
+                    <button class="nav-button w-full text-left p-3 rounded-lg flex items-center transition-colors duration-150 hover:bg-gray-700" data-view="add-event">
+                        <i data-lucide="calendar-plus" class="w-5 h-5 mr-3 text-indigo-400"></i>
+                        Add Event
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-button w-full text-left p-3 rounded-lg flex items-center transition-colors duration-150 hover:bg-gray-700" data-view="view-events">
+                        <i data-lucide="list-checks" class="w-5 h-5 mr-3 text-indigo-400"></i>
+                        View & Sort Events
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-button w-full text-left p-3 rounded-lg flex items-center transition-colors duration-150 hover:bg-gray-700" data-view="search-events">
+                        <i data-lucide="search" class="w-5 h-5 mr-3 text-indigo-400"></i>
+                        Search Events
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <h1 class="text-4xl font-extrabold mb-6 text-white">Event Management System (Local Storage)</h1>
+
+        <div id="status-message" class="mb-6 hidden p-4 rounded-lg text-sm transition-all duration-300"></div>
+
+        <div id="content-area">
+            <section id="add-event" class="view hidden">
+                <h2 class="text-3xl font-semibold mb-6 text-gray-200">Add New Event</h2>
+                <form id="add-event-form" class="space-y-4 max-w-lg">
+                    <div>
+                        <label for="event-name" class="block text-sm font-medium text-gray-400 mb-1">Event Name</label>
+                        <input type="text" id="event-name" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="event-date" class="block text-sm font-medium text-gray-400 mb-1">Date</label>
+                            <input type="date" id="event-date" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400">
+                        </div>
+                        <div>
+                            <label for="event-time" class="block text-sm font-medium text-gray-400 mb-1">Time</label>
+                            <input type="time" id="event-time" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="event-location" class="block text-sm font-medium text-gray-400 mb-1">Location</label>
+                        <input type="text" id="event-location" required class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400">
+                    </div>
+                    <div>
+                        <label for="event-attendees" class="block text-sm font-medium text-gray-400 mb-1">Expected Attendees</label>
+                        <input type="number" id="event-attendees" required min="1" value="100" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400">
+                    </div>
+                    <div>
+                        <label for="event-budget" class="block text-sm font-medium text-gray-400 mb-1">Budget (USD)</label>
+                        <input type="number" id="event-budget" required min="0" step="0.01" value="1000.00" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400">
+                    </div>
+                    <button type="submit" class="w-full py-3 mt-4 text-white font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 transition-colors duration-200 shadow-md">
+                        Add Event
+                    </button>
+                </form>
+            </section>
+
+            <section id="view-events" class="view hidden">
+                <h2 class="text-3xl font-semibold mb-6 text-gray-200">Manage & Sort Events</h2>
+                <div class="flex items-center space-x-4 mb-6">
+                    <label for="sort-by" class="text-sm font-medium text-gray-400">Sort By:</label>
+                    <select id="sort-by" class="p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="date-asc">Date (Oldest first)</option>
+                        <option value="date-desc">Date (Newest first)</option>
+                        <option value="attendees-desc">Attendees (High to Low)</option>
+                        <option value="name-asc">Name (A-Z)</option>
+                    </select>
+                </div>
+
+                <div class="bg-gray-800 rounded-lg shadow-lg overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-700">
+                        <thead class="bg-gray-700">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date/Time</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Location</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Attendees</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Budget</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="events-table-body" class="bg-gray-800 divide-y divide-gray-700">
+                            <tr><td colspan="7" class="text-center py-4 text-gray-500">Loading events...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="search-events" class="view hidden">
+                <h2 class="text-3xl font-semibold mb-6 text-gray-200">Search Events</h2>
+                <div class="space-y-4 max-w-lg mb-6">
+                    <div>
+                        <label for="search-by-field" class="block text-sm font-medium text-gray-400 mb-1">Search By</label>
+                        <select id="search-by-field" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="name">Event Name</option>
+                            <option value="location">Location</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="search-term" class="block text-sm font-medium text-gray-400 mb-1">Enter Search Term</label>
+                        <input type="text" id="search-term" placeholder="e.g., Tech Summit" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400">
+                    </div>
+                    <button id="execute-search" class="py-3 px-6 text-white font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 transition-colors duration-200 shadow-md">
+                        Search
+                    </button>
+                </div>
+
+                <h3 class="text-2xl font-semibold mt-8 mb-4 text-gray-300">Search Results</h3>
+                <div id="search-results-table" class="bg-gray-800 rounded-lg shadow-lg overflow-x-auto">
+                    <p class="p-6 text-gray-500" id="search-placeholder">Enter a search term and click 'Search' to view results.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-2xl border border-gray-700">
+            <h3 id="modal-title" class="text-xl font-bold mb-4 text-white">Confirm Deletion</h3>
+            <p id="modal-message" class="text-gray-300 mb-6">Are you sure you want to delete this event?</p>
+            <div class="flex justify-end space-x-4">
+                <button id="modal-cancel" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors">Cancel</button>
+                <button id="modal-confirm" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        // Remove Firebase imports as we are using Local Storage
+        // import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        // import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // import { getFirestore, doc, addDoc, deleteDoc, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global State
+        const LOCAL_STORAGE_KEY = 'eventManagerEvents';
+        let allEvents = []; // Cache of all events for in-memory searching/sorting
+
+        // Utility Functions
+        const $ = (selector) => document.querySelector(selector);
+        const $$ = (selector) => document.querySelectorAll(selector);
+
+        function generateUniqueId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
+        }
+
+        function saveEventsToLocalStorage() {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allEvents));
+            } catch (e) {
+                console.error("Error saving to Local Storage:", e);
+                showMessage("Warning: Could not save events to your browser's storage.", 'error');
+            }
+        }
+
+        function loadEventsFromLocalStorage() {
+            try {
+                const storedEvents = localStorage.getItem(LOCAL_STORAGE_KEY);
+                allEvents = storedEvents ? JSON.parse(storedEvents) : [];
+                // Ensure attendees and budget are numbers for sorting/display
+                allEvents.forEach(event => {
+                    event.attendees = Number(event.attendees);
+                    event.budget = Number(event.budget);
+                });
+                console.log("Events loaded:", allEvents);
+            } catch (e) {
+                console.error("Error loading from Local Storage:", e);
+                showMessage("Error loading events from storage. Starting fresh.", 'error');
+                allEvents = [];
+            }
+        }
+
+        function showMessage(message, type = 'info') {
+            const statusDiv = $('#status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = `mb-6 p-4 rounded-lg text-sm transition-all duration-300`;
+            statusDiv.classList.add('block');
+
+            switch (type) {
+                case 'success':
+                    statusDiv.classList.add('bg-green-800', 'text-green-200');
+                    break;
+                case 'error':
+                    statusDiv.classList.add('bg-red-800', 'text-red-200');
+                    break;
+                case 'info':
+                default:
+                    statusDiv.classList.add('bg-indigo-800', 'text-indigo-200');
+            }
+
+            setTimeout(() => {
+                statusDiv.classList.remove('block');
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        function switchView(viewId) {
+            $$('.view').forEach(view => view.classList.add('hidden'));
+            const targetView = $(`#${viewId}`);
+            if (targetView) {
+                targetView.classList.remove('hidden');
+                // Re-render icons after view change
+                lucide.createIcons();
+            }
+
+            $$('.nav-button').forEach(button => {
+                button.classList.remove('bg-gray-700', 'font-bold');
+                if (button.getAttribute('data-view') === viewId) {
+                    button.classList.add('bg-gray-700', 'font-bold');
+                }
+            });
+
+            if (viewId === 'view-events') {
+                renderEventsTable(allEvents, $('#sort-by').value);
+            }
+            if (viewId === 'search-events') {
+                $('#search-results-table').innerHTML = `<p class="p-6 text-gray-500" id="search-placeholder">Enter a search term and click 'Search' to view results.</p>`;
+            }
+        }
+
+        // --- Event Management Functions (Local Storage implementation) ---
+
+        function listenForEvents() {
+            // In Local Storage, this simply means loading the data once on init
+            loadEventsFromLocalStorage();
+        }
+
+        async function addEvent(eventData) {
+            try {
+                const newEvent = {
+                    id: generateUniqueId(), // Create a unique ID
+                    ...eventData,
+                    attendees: Number(eventData.attendees),
+                    budget: Number(eventData.budget),
+                    createdAt: new Date().toISOString()
+                };
+
+                allEvents.push(newEvent);
+                saveEventsToLocalStorage();
+                showMessage(`Event '${newEvent.name}' added and saved locally!`, 'success');
+                $('#add-event-form').reset();
+            } catch (error) {
+                console.error("Error adding event:", error);
+                showMessage(`Error adding event: ${error.message}`, 'error');
+            }
+        }
+
+        async function deleteEvent(eventId) {
+            const initialLength = allEvents.length;
+            allEvents = allEvents.filter(event => event.id !== eventId);
+
+            if (allEvents.length < initialLength) {
+                saveEventsToLocalStorage();
+                showMessage("Event deleted successfully.", 'success');
+                // Re-render the table after deletion if we are on the view-events page
+                if ($('#view-events:not(.hidden)')) {
+                    renderEventsTable(allEvents, $('#sort-by').value);
+                }
+            } else {
+                showMessage("Error: Event not found or deletion failed.", 'error');
+            }
+        }
+
+        // --- Rendering and View Logic ---
+
+        function renderEventsTable(events, sortBy) {
+            const tbody = $('#events-table-body');
+            tbody.innerHTML = '';
+
+            // 1. Sort Events (Client-side sorting)
+            let sortedEvents = [...events]; // Clone array to avoid modifying the original cache
+
+            sortedEvents.sort((a, b) => {
+                switch (sortBy) {
+                    case 'date-desc':
+                        return new Date(b.date) - new Date(a.date);
+                    case 'date-asc':
+                        return new Date(a.date) - new Date(b.date);
+                    case 'attendees-desc':
+                        return (b.attendees || 0) - (a.attendees || 0);
+                    case 'name-asc':
+                        return (a.name || '').localeCompare(b.name || '');
+                    default:
+                        return 0;
+                }
+            });
+
+
+            // 2. Render Rows
+            if (sortedEvents.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500">No events found. Add one!</td></tr>`;
+                return;
+            }
+
+            sortedEvents.forEach((event, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-700 transition-colors duration-150';
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-white font-semibold">${event.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${event.date} at ${event.time}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${event.location}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${event.attendees.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400">$${event.budget.toFixed(2).toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="text-red-500 hover:text-red-400 delete-event-btn" data-id="${event.id}">
+                             <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Re-render icons and attach listeners
+            lucide.createIcons();
+            tbody.querySelectorAll('.delete-event-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const eventId = btn.getAttribute('data-id');
+                    openConfirmationModal('Confirm Deletion', 'Are you sure you want to permanently delete this event?', () => deleteEvent(eventId));
+                });
+            });
+        }
+
+
+        function searchEvents() {
+            const field = $('#search-by-field').value;
+            const term = $('#search-term').value.toLowerCase().trim();
+            const resultsDiv = $('#search-results-table');
+
+            if (!term) {
+                resultsDiv.innerHTML = `<p class="p-6 text-gray-500">Please enter a search term.</p>`;
+                return;
+            }
+
+            const filteredEvents = allEvents.filter(event => {
+                const value = event[field] ? String(event[field]).toLowerCase() : '';
+                return value.includes(term);
+            });
+
+            if (filteredEvents.length === 0) {
+                 resultsDiv.innerHTML = `<p class="p-6 text-gray-500">No events found matching "${term}" in ${field}.</p>`;
+                 return;
+            }
+
+            // Render search results table
+            let tableHTML = `
+                <table class="min-w-full divide-y divide-gray-700">
+                    <thead class="bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Location</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Attendees</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-gray-800 divide-y divide-gray-700">
+            `;
+
+            filteredEvents.forEach((event, index) => {
+                tableHTML += `
+                    <tr class="hover:bg-gray-700 transition-colors duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">${index + 1}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-white font-semibold">${event.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${event.date}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${event.location}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${event.attendees.toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            resultsDiv.innerHTML = tableHTML;
+        }
+
+        // --- Modal/Dialog Logic (Non-alert) ---
+
+        let confirmationCallback = null;
+        const modal = $('#confirmation-modal');
+        const modalTitle = $('#modal-title');
+        const modalMessage = $('#modal-message');
+        const modalConfirm = $('#modal-confirm');
+        const modalCancel = $('#modal-cancel');
+
+        function openConfirmationModal(title, message, callback) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            confirmationCallback = callback;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeConfirmationModal() {
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            confirmationCallback = null;
+        }
+
+        modalConfirm.addEventListener('click', () => {
+            if (confirmationCallback) {
+                confirmationCallback();
+            }
+            closeConfirmationModal();
+        });
+
+        modalCancel.addEventListener('click', closeConfirmationModal);
+        // Close modal if clicking outside the inner content (on the dark overlay)
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeConfirmationModal();
+            }
+        });
+
+
+        // --- Event Listeners and Initialization ---
+
+        window.onload = () => {
+            listenForEvents(); // Load events from Local Storage
+            switchView('add-event'); // Default view on load
+
+            // Sidebar navigation
+            $$('.nav-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    switchView(button.getAttribute('data-view'));
+                });
+            });
+
+            // Add Event form submission
+            $('#add-event-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const eventData = {
+                    name: $('#event-name').value,
+                    date: $('#event-date').value,
+                    time: $('#event-time').value,
+                    location: $('#event-location').value,
+                    attendees: $('#event-attendees').value,
+                    budget: $('#event-budget').value,
+                };
+                addEvent(eventData);
+            });
+
+            // Sort Events dropdown change
+            $('#sort-by').addEventListener('change', (e) => {
+                renderEventsTable(allEvents, e.target.value);
+            });
+
+            // Search Events execution
+            $('#execute-search').addEventListener('click', searchEvents);
+            $('#search-term').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchEvents();
+                }
+            });
+        };
+
+        // Initialize icons after script execution
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
+    </script>
+</body>
+</html>
