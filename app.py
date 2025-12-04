@@ -90,7 +90,7 @@ def get_events_dataframe(events: List[Dict[str, Any]], sort_by: str = 'date-asc'
     
     # Prepare display columns
     df['Date/Time'] = df['date'] + ' at ' + df['time'].str[:5] # Truncate time to HH:MM for display
-    df['Budget (USD)'] = df['budget'].apply(lambda x: f"${x:,.2f}")
+    df['Budget (PESO)'] = df['budget'].apply(lambda x: f"${x:,.2f}")
     df['Attendees'] = df['attendees'].apply(lambda x: f"{x:,}")
     # ID is kept for internal reference, not displayed
     df['Sort_Key'] = df['datetime_obj']
@@ -108,7 +108,7 @@ def get_events_dataframe(events: List[Dict[str, Any]], sort_by: str = 'date-asc'
     df['#'] = range(1, len(df) + 1) # Add index column for UI
     
     # Only return columns needed for display and the internal ID
-    return df[['#', 'name', 'Date/Time', 'location', 'Attendees', 'Budget (USD)', 'id']]
+    return df[['#', 'name', 'Date/Time', 'location', 'Attendees', 'Budget (PESO)', 'id']]
 
 # --- UI Components (Views) ---
 
@@ -131,9 +131,9 @@ def add_event_view():
 
         col_num_1, col_num_2 = st.columns(2)
         with col_num_1:
-            st.number_input("Expected Attendees", min_value=1, value=100, step=1, key="event-attendees")
+            st.number_input("Expected Attendees", min_value=1, value=10, step=1, key="event-attendees")
         with col_num_2:
-            st.number_input("Budget (USD)", min_value=0.0, value=1000.00, step=0.01, format="%.2f", key="event-budget")
+            st.number_input("Budget (PESO)", min_value=0.0, value=10.00, step=0.01, format="%.2f", key="event-budget")
             
         submitted = st.form_submit_button("Add Event", type="primary", use_container_width=True)
         
@@ -184,7 +184,7 @@ def view_events_view():
             st.markdown("### All Events")
             
             # Prepare columns for the table display
-            display_df = events_df[['#', 'name', 'Date/Time', 'location', 'Attendees', 'Budget (USD)']]
+            display_df = events_df[['#', 'name', 'Date/Time', 'location', 'Attendees', 'Budget (PESO)']]
             
             # Display the table itself (read-only for all columns)
             st.dataframe(
@@ -301,3 +301,7 @@ elif st.session_state.current_view == 'search-events':
     search_events_view()
 
 # *** REMOVED THE FAILING LINE: add_new_event(event_data) ***
+
+
+
+
