@@ -30,12 +30,10 @@ def set_view(view_name: str):
     """Sets the current view in the session state."""
     st.session_state.current_view = view_name
 
-# *** FIXED AND SIMPLIFIED add_new_event ***
 def add_new_event(event_data: Dict[str, Any]):
     """
-    Adds a new event to the session state.
-    Assumes event_data fields for 'attendees' and 'budget' are already
-    of the correct numeric type from st.number_input.
+    Adds a new event to the session state, displays a notification,
+    and redirects the user to the 'View Events' page.
     """
     # Check for required fields again (though form submission logic also checks)
     if not event_data['name'] or not event_data['location']:
@@ -44,9 +42,10 @@ def add_new_event(event_data: Dict[str, Any]):
 
     # Create the datetime object for sorting
     try:
+        # Use %H:%M:%S as st.time_input returns a time object with seconds
         datetime_obj = datetime.strptime(
             f"{event_data['date']} {event_data['time']}", 
-            '%Y-%m-%d %H:%M:%S' # Use %H:%M:%S as st.time_input returns a time object with seconds
+            '%Y-%m-%d %H:%M:%S' 
         )
     except ValueError:
         st.error("Error creating event datetime. Check date and time format.")
@@ -59,13 +58,19 @@ def add_new_event(event_data: Dict[str, Any]):
         'time': event_data['time'],
         'location': event_data['location'],
         'attendees': event_data['attendees'], # Directly use the numeric value
-        'budget': event_data['budget'],       # Directly use the numeric value
+        'budget': event_data['budget'], # Directly use the numeric value
         'datetime_obj': datetime_obj
     }
     
     st.session_state.events.append(new_event)
-    st.success(f"Event '{new_event['name']}' added successfully!")
-    # Streamlit forms handle clearing, but success message needs a rerun
+    
+    # *** ADDED NOTIFICATION AND REDIRECT LOGIC ***
+    st.toast(f"Event '{new_event['name']}' added! Redirecting to list...", icon='✅')
+    
+    # Set view to 'view-events' before rerun to show the list instantly
+    st.session_state.current_view = 'view-events' 
+    
+    # Rerun to update the UI and switch the view
     st.rerun() 
 
 def delete_event(event_id: str):
@@ -90,7 +95,8 @@ def get_events_dataframe(events: List[Dict[str, Any]], sort_by: str = 'date-asc'
     
     # Prepare display columns
     df['Date/Time'] = df['date'] + ' at ' + df['time'].str[:5] # Truncate time to HH:MM for display
-    df['Budget (PESO)'] = df['budget'].apply(lambda x: f"${x:,.2f}")
+    # Ensure budget is numeric before formatting
+    df['Budget (PESO)'] = df['budget'].apply(lambda x: f"₱{x:,.2f}") # Changed $ to ₱ for PESO clarity
     df['Attendees'] = df['attendees'].apply(lambda x: f"{x:,}")
     # ID is kept for internal reference, not displayed
     df['Sort_Key'] = df['datetime_obj']
@@ -114,7 +120,7 @@ def get_events_dataframe(events: List[Dict[str, Any]], sort_by: str = 'date-asc'
 
 def add_event_view():
     """Renders the Add Event form."""
-    st.markdown("## Add New Event")
+    st.markdown("## Add New Event 📅")
     
     # Use st.form to ensure all inputs are cleared on submission
     with st.form("add_event_form"):
@@ -125,7 +131,9 @@ def add_event_view():
         with col_dt_1:
             st.date_input("Date", datetime.today().date(), key="event-date")
         with col_dt_2:
-            st.time_input("Time", datetime.now().time(), key="event-time")
+            # Set a default time that includes seconds, as st.time_input does
+            default_time = datetime.now().time().replace(microsecond=0)
+            st.time_input("Time", default_time, key="event-time")
 
         st.text_input("Location", key="event-location")
 
@@ -133,7 +141,7 @@ def add_event_view():
         with col_num_1:
             st.number_input("Expected Attendees", min_value=1, value=10, step=1, key="event-attendees")
         with col_num_2:
-            st.number_input("Budget (PESO)", min_value=0.0, value=10.00, step=0.01, format="%.2f", key="event-budget")
+            st.number_input("Budget (PESO)", min_value=0.0, value=100.00, step=0.01, format="%.2f", key="event-budget")
             
         submitted = st.form_submit_button("Add Event", type="primary", use_container_width=True)
         
@@ -150,7 +158,7 @@ def add_event_view():
                 'budget': st.session_state['event-budget'],
             }
             if event_data['name'] and event_data['location']:
-                # The function now handles the rerun to update the UI
+                # The function now handles the notification and redirect
                 add_new_event(event_data)
             else:
                 st.error("Event Name and Location are required.")
@@ -158,7 +166,7 @@ def add_event_view():
 
 def view_events_view():
     """Renders the View & Sort Events table."""
-    st.markdown("## Manage & Sort Events")
+    st.markdown("## Manage & Sort Events 📋")
 
     sort_option = st.selectbox(
         "Sort By:",
@@ -215,7 +223,7 @@ def view_events_view():
 
 def search_events_view():
     """Renders the Search Events form and results."""
-    st.markdown("## Search Events")
+    st.markdown("## Search Events 🔍")
     
     col1, col2, col3 = st.columns([1, 2, 1])
     
@@ -289,7 +297,7 @@ with st.sidebar:
     nav_button("Search Events", 'search-events', '🔍')
 
 # Main Content Area
-st.title("Event Management System (Session State)")
+st.title("Event Management")
 st.markdown("---")
 
 # Render the active view based on session state
@@ -299,9 +307,6 @@ elif st.session_state.current_view == 'view-events':
     view_events_view()
 elif st.session_state.current_view == 'search-events':
     search_events_view()
-
-# *** REMOVED THE FAILING LINE: add_new_event(event_data) ***
-
 
 
 
